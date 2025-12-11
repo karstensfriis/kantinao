@@ -14,9 +14,10 @@ func main() {
 	router := gin.Default()
 	menuHandler := handlers.MenuHandler{Service: services.NewMenuService(rdb)}
 
-	router.POST("/menus", menuHandler.CreateMenu)
 	router.GET("/menus", menuHandler.GetAllMenus)
 	router.GET("/menus/:id", menuHandler.GetMenu)
+	router.POST("/menus", menuHandler.CreateMenu)
+	router.DELETE("/menus/:id", menuHandler.DeleteMenu)
 
 	if err := router.Run(":8080"); err != nil {
 		panic(err)

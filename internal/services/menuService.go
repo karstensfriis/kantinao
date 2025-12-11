@@ -13,8 +13,9 @@ import (
 
 type MenuService interface {
 	CreateWeeklyMenu(menu *models.WeekMenu) (*models.WeekMenu, error)
-	GetWeeklyMenu(menuID string) (*models.WeekMenu, error)
 	GetAllMenus() ([]*models.WeekMenu, error)
+	GetSingleMenu(menuID string) (*models.WeekMenu, error)
+	DeleteMenu(menuID string) error
 }
 
 type menuService struct {
@@ -49,25 +50,6 @@ func (s *menuService) CreateWeeklyMenu(menu *models.WeekMenu) (*models.WeekMenu,
 	return menu, nil
 }
 
-func (s *menuService) GetWeeklyMenu(menuID string) (*models.WeekMenu, error) {
-	key := fmt.Sprintf("menu:%s", menuID)
-
-	val, err := s.rdb.Get(s.ctx, key).Result()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, fmt.Errorf("menu with ID %s not found", menuID)
-		}
-		return nil, fmt.Errorf("redis error: %w", err)
-	}
-
-	var menu models.WeekMenu
-	if err := json.Unmarshal([]byte(val), &menu); err != nil {
-		return nil, fmt.Errorf("invalid menu format: %w", err)
-	}
-
-	return &menu, nil
-}
-
 func (s *menuService) GetAllMenus() ([]*models.WeekMenu, error) {
 	var menus []*models.WeekMenu
 
@@ -93,4 +75,40 @@ func (s *menuService) GetAllMenus() ([]*models.WeekMenu, error) {
 	}
 
 	return menus, nil
+}
+
+func (s *menuService) GetSingleMenu(menuID string) (*models.WeekMenu, error) {
+	key := fmt.Sprintf("menu:%s", menuID)
+
+	val, err := s.rdb.Get(s.ctx, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return nil, fmt.Errorf("menu with ID %s not found", menuID)
+		}
+		return nil, fmt.Errorf("redis error: %w", err)
+	}
+
+	var menu models.WeekMenu
+	if err := json.Unmarshal([]byte(val), &menu); err != nil {
+		return nil, fmt.Errorf("invalid menu format: %w", err)
+	}
+
+	return &menu, nil
+}
+
+func (s *menuService) DeleteMenu(menuID string) error {
+	key := fmt.Sprintf("menu:%s", menuID)
+
+	deleted, err := s.rdb.Del(s.ctx, key).Result()
+	if err != nil {
+		return fmt.Errorf("failed to delete menu %s: %w", menuID, err)
+	}
+
+	if deleted == 0 {
+		return fmt.Errorf("menu %s not found", menuID)
+	}
+
+	s.rdb.SRem(s.ctx, "menus:all_ids", menuID)
+
+	return nil
 }
