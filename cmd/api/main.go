@@ -15,5 +15,10 @@ func main() {
 	menuHandler := handlers.MenuHandler{Service: services.NewMenuService(rdb)}
 
 	router.POST("/menus", menuHandler.CreateMenu)
+	router.GET("/menus", menuHandler.GetAllMenus)
 	router.GET("/menus/:id", menuHandler.GetMenu)
+
+	if err := router.Run(":8080"); err != nil {
+		panic(err)
+	}
 }

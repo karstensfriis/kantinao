@@ -1,8 +1,10 @@
 package models
 
+import "github.com/google/uuid"
+
 type Dish struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name" binding:"required"`
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name" binding:"required"`
 
 	Description string  `json:"description"`
 	Price       float64 `json:"price"`
